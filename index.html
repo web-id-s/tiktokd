@@ -1,25 +1,213 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TikTok Downloader</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Auto Buy Nokos - Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Poppins, sans-serif;
+      background: #0d0d0d;
+      color: #fff;
+    }.layout {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: #111;
+  padding: 20px;
+  border-right: 1px solid #222;
+}
+
+.sidebar h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.menu a {
+  display: block;
+  padding: 12px;
+  color: #ccc;
+  margin-bottom: 8px;
+  text-decoration: none;
+  border-radius: 10px;
+}
+
+.menu a:hover,
+.active {
+  background: #0af;
+  color: #fff !important;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 25px;
+  overflow-y: auto;
+}
+
+.card {
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid #333;
+  margin-bottom: 20px;
+}
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  margin-bottom: 15px;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 10px;
+  color: #fff;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: #08f;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.resultbox {
+  background: #111;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  white-space: pre-wrap;
+  margin-top: 10px;
+}
+
+/* LOGIN REGISTER MODAL */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #1a1a1a;
+  padding: 30px;
+  width: 350px;
+  border-radius: 14px;
+  border: 1px solid #333;
+}
+
+.modal h3 {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+  </style>
 </head>
-
 <body>
-  <div class="container">
-    <h1 class="title">TikTok Downloader <span>No Watermark</span></h1>
-    <p class="subtitle">Tempel link video TikTok di bawah ini</p>
-
-    <div class="input-box">
-      <input id="tiktokUrl" type="text" placeholder="https://www.tiktok.com/..." />
-      <button onclick="downloadVideo()">Download</button>
-    </div>
-
-    <div id="result"></div>
+<div id="authModal" class="modal">
+  <div class="modal-content">
+    <h3 id="authTitle">Login</h3>
+    <input type="text" id="authUser" placeholder="Username" />
+    <input type="password" id="authPass" placeholder="Password (6-8 karakter)" />
+    <button onclick="submitAuth()">Submit</button>
+    <p style="margin-top:10px;text-align:center;cursor:pointer;color:#0af;" onclick="toggleAuth()">Ganti ke Register</p>
   </div>
+</div><div class="layout">
+  <div class="sidebar">
+    <h2>Dashboard</h2>
+    <div class="menu">
+      <a class="active">Auto Buy</a>
+      <a>Riwayat</a>
+      <a>Profile</a>
+      <a onclick="logout()">Logout</a>
+    </div>
+  </div>  <div class="main"><div class="card">
+  <h2>Auto Buy Nokos</h2>
 
-  <script src="script.js"></script>
-</body>
+  <label>Service</label>
+  <select id="service">
+    <option value="whatsapp">WhatsApp</option>
+    <option value="sms">SMS</option>
+  </select>
+
+  <label>Server ID</label>
+  <input id="server" type="number" value="3" />
+
+  <label>Quantity</label>
+  <input id="qty" type="number" value="1" />
+
+  <button onclick="buy()">BUY NOW</button>
+  <div id="result" class="resultbox"></div>
+</div>
+
+  </div>
+</div><script>
+let mode = "login";
+
+function toggleAuth() {
+  mode = mode === "login" ? "register" : "login";
+  document.getElementById("authTitle").innerText = mode === "login" ? "Login" : "Register";
+}
+
+function submitAuth() {
+  let user = document.getElementById("authUser").value;
+  let pass = document.getElementById("authPass").value;
+
+  if (pass.length < 6 || pass.length > 8) {
+    alert("Password harus 6 - 8 karakter!");
+    return;
+  }
+
+  if (mode === "register") {
+    localStorage.setItem("user", user);
+    localStorage.setItem("pass", pass);
+    alert("Register Berhasil!");
+    mode = "login";
+    document.getElementById("authTitle").innerText = "Login";
+    return;
+  }
+
+  if (mode === "login") {
+    if (localStorage.getItem("user") === user && localStorage.getItem("pass") === pass) {
+      document.getElementById("authModal").style.display = "none";
+    } else {
+      alert("Username atau Password salah!");
+    }
+  }
+}
+
+function logout(){
+  document.getElementById("authModal").style.display = "flex";
+}
+
+async function buy() {
+  let service = document.getElementById("service").value;
+  let server = Number(document.getElementById("server").value);
+  let qty = Number(document.getElementById("qty").value);
+
+  document.getElementById("result").innerText = "Processing...";
+
+  let res = await fetch("/buy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ service, server_id: server, qty })
+  });
+
+  let json = await res.json();
+  document.getElementById("result").innerText = JSON.stringify(json, null, 2);
+}
+</script></body>
 </html>
